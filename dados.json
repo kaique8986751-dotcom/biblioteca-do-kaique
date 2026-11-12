@@ -1,0 +1,12 @@
+{
+  "librarian": {
+    "nome": "Carlos Silva",
+    "crb": "CRB-6/2048",
+    "turno": "Integral",
+    "user": "admin",
+    "pass": "1234"
+  },
+  "books": [],
+  "users": [],
+  "loans": []
+}

@@ -1,0 +1,739 @@
+<!DOCTYPE html>
+<html lang="pt-BR">
+<head>
+    <meta charset="UTF-8">
+    <meta name="viewport" content="width=device-width, initial-scale=1.0">
+    <title>BiblioTech - Sistema de Gestão de Biblioteca</title>
+    <style>
+        :root {
+            --primary: #2563eb;
+            --primary-dark: #1d4ed8;
+            --secondary: #64748b;
+            --success: #16a34a;
+            --danger: #dc2626;
+            --warning: #d97706;
+            --bg: #f1f5f9;
+            --card: #ffffff;
+            --text: #1e293b;
+            --border: #cbd5e1;
+        }
+
+        * { box-sizing: border-box; margin: 0; padding: 0; font-family: 'Segoe UI', Tahoma, Geneva, Verdana, sans-serif; }
+        body { background-color: var(--bg); color: var(--text); }
+
+        /* TELA DE LOGIN */
+        #login-screen {
+            display: flex; justify-content: center; align-items: center; height: 100vh;
+            background: linear-gradient(135deg, #1e293b 0%, #2563eb 100%);
+        }
+        .login-box {
+            background: var(--card); padding: 2.5rem; border-radius: 10px;
+            box-shadow: 0 10px 25px rgba(0,0,0,0.2); width: 100%; max-width: 400px;
+        }
+        .login-box h2 { text-align: center; margin-bottom: 1.5rem; color: var(--primary); }
+        .hint { font-size: 0.8rem; color: var(--secondary); margin-top: 1rem; background: #f8fafc; padding: 10px; border-radius: 5px; }
+
+        /* LAYOUT PRINCIPAL */
+        #app-screen { display: none; min-height: 100vh; flex-direction: column; }
+        header {
+            background: #1e293b; color: white; padding: 1rem 2rem;
+            display: flex; justify-content: space-between; align-items: center;
+        }
+        .user-info { display: flex; align-items: center; gap: 15px; }
+        .badge-role { background: var(--primary); padding: 3px 10px; border-radius: 12px; font-size: 0.8rem; font-weight: bold; }
+
+        .container { display: flex; flex: 1; }
+        nav {
+            width: 240px; background: var(--card); border-right: 1px solid var(--border);
+            padding: 1.5rem 0; display: flex; flex-direction: column; gap: 5px;
+        }
+        nav button {
+            background: none; border: none; text-align: left; padding: 12px 24px;
+            font-size: 1rem; color: var(--text); cursor: pointer; transition: 0.2s;
+            font-weight: 500;
+        }
+        nav button:hover, nav button.active { background: #eff6ff; color: var(--primary); border-right: 4px solid var(--primary); }
+
+        main { flex: 1; padding: 2rem; overflow-y: auto; }
+        .section { display: none; }
+        .section.active { display: block; }
+
+        /* CARDS & DASHBOARD */
+        .stats-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(200px, 1fr)); gap: 1.5rem; margin-bottom: 2rem; }
+        .stat-card { background: var(--card); padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); border-left: 4px solid var(--primary); }
+        .stat-card.danger { border-left-color: var(--danger); }
+        .stat-card.success { border-left-color: var(--success); }
+        .stat-card h3 { font-size: 0.9rem; color: var(--secondary); margin-bottom: 0.5rem; }
+        .stat-card p { font-size: 2rem; font-weight: bold; }
+
+        /* FORMULÁRIOS */
+        .card { background: var(--card); padding: 1.5rem; border-radius: 8px; box-shadow: 0 2px 5px rgba(0,0,0,0.05); margin-bottom: 1.5rem; }
+        .card h3 { margin-bottom: 1rem; border-bottom: 1px solid var(--border); padding-bottom: 0.5rem; }
+        .form-grid { display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; }
+        .form-group { display: flex; flex-direction: column; margin-bottom: 1rem; }
+        label { font-size: 0.85rem; font-weight: 600; margin-bottom: 0.3rem; color: var(--secondary); }
+        input, select {
+            padding: 0.6rem; border: 1px solid var(--border); border-radius: 5px; font-size: 0.95rem;
+        }
+        input:focus, select:focus { outline: none; border-color: var(--primary); }
+        .scanner-input { background-color: #fefce8; border: 2px dashed #eab308; }
+
+        .btn {
+            padding: 0.6rem 1.2rem; border: none; border-radius: 5px; cursor: pointer;
+            font-weight: 600; font-size: 0.9rem; transition: 0.2s; display: inline-flex; align-items: center; gap: 5px;
+        }
+        .btn-primary { background: var(--primary); color: white; }
+        .btn-primary:hover { background: var(--primary-dark); }
+        .btn-success { background: var(--success); color: white; }
+        .btn-danger { background: var(--danger); color: white; }
+        .btn-secondary { background: var(--secondary); color: white; }
+        .btn-sm { padding: 0.3rem 0.7rem; font-size: 0.8rem; }
+
+        /* TABELAS */
+        table { width: 100%; border-collapse: collapse; margin-top: 1rem; }
+        th, td { padding: 0.8rem; text-align: left; border-bottom: 1px solid var(--border); font-size: 0.9rem; }
+        th { background: #f8fafc; font-weight: 600; color: var(--secondary); }
+        .status-badge { padding: 3px 8px; border-radius: 12px; font-size: 0.75rem; font-weight: bold; }
+        .status-ok { background: #dcfce7; color: var(--success); }
+        .status-late { background: #fee2e2; color: var(--danger); }
+        .status-borrowed { background: #fef3c7; color: var(--warning); }
+
+        /* MODAL CARTEIRINHA */
+        .modal {
+            display: none; position: fixed; top: 0; left: 0; width: 100%; height: 100%;
+            background: rgba(0,0,0,0.6); justify-content: center; align-items: center; z-index: 1000;
+        }
+        .modal-content { background: white; padding: 2rem; border-radius: 8px; max-width: 450px; width: 90%; text-align: center; }
+        
+        /* LAYOUT DA CARTEIRINHA */
+        .id-card {
+            border: 2px solid #1e293b; border-radius: 10px; padding: 15px; margin: 15px auto;
+            width: 340px; text-align: left; background: linear-gradient(to right, #ffffff, #f8fafc);
+            box-shadow: 0 4px 6px rgba(0,0,0,0.1);
+        }
+        .id-card-header { background: #1e293b; color: white; padding: 8px; border-radius: 5px; text-align: center; font-weight: bold; margin-bottom: 10px; }
+        .id-card-body { display: flex; gap: 15px; align-items: center; }
+        .id-photo { width: 70px; height: 85px; background: #cbd5e1; display: flex; align-items: center; justify-content: center; font-size: 0.7rem; color: #475569; border-radius: 4px; border: 1px solid #94a3b8; }
+        .id-details p { font-size: 0.85rem; margin-bottom: 4px; }
+        .id-barcode { margin-top: 10px; text-align: center; font-family: 'Courier New', Courier, monospace; font-weight: bold; letter-spacing: 3px; border-top: 1px dashed #94a3b8; padding-top: 5px; }
+
+        /* ESTILO EXCLUSIVO PARA IMPRESSÃO DA CARTEIRINHA */
+        @media print {
+            body * { visibility: hidden; }
+            #printable-card, #printable-card * { visibility: visible; }
+            #printable-card { position: fixed; left: 20px; top: 20px; box-shadow: none; }
+        }
+    </style>
+</head>
+<body>
+
+    <!-- TELA DE LOGIN -->
+    <div id="login-screen">
+        <div class="login-box">
+            <h2>📚 BiblioTech</h2>
+            <form id="login-form">
+                <div class="form-group">
+                    <label>Usuário (Login)</label>
+                    <input type="text" id="login-user" required placeholder="Digite seu usuário">
+                </div>
+                <div class="form-group">
+                    <label>Senha</label>
+                    <input type="password" id="login-pass" required placeholder="Digite sua senha">
+                </div>
+                <button type="submit" class="btn btn-primary" style="width: 100%; justify-content: center;">Entrar no Sistema</button>
+            </form>
+            <div class="hint">
+                <strong>Contas Padrão:</strong><br>
+                Admin: <code>admin</code> / Senha: <code>123</code><br>
+                Bibliotecário: <code>biblio</code> / Senha: <code>123</code>
+            </div>
+        </div>
+    </div>
+
+    <!-- SISTEMA PRINCIPAL -->
+    <div id="app-screen">
+        <header>
+            <div><strong>📚 BiblioTech</strong> | Gestão de Acervo</div>
+            <div class="user-info">
+                <span id="logged-user-name">Usuário</span>
+                <span id="logged-user-role" class="badge-role">Perfil</span>
+                <button onclick="logout()" class="btn btn-danger btn-sm">Sair</button>
+            </div>
+        </header>
+
+        <div class="container">
+            <nav id="sidebar-menu">
+                <button onclick="showSection('dashboard')" class="active">📊 Painel & Prazos</button>
+                <button onclick="showSection('loans')">🔄 Empréstimo / Devolução</button>
+                <button onclick="showSection('books')">📖 Cadastro de Livros</button>
+                <button onclick="showSection('readers')">👥 Leitores & Carteirinha</button>
+                <button onclick="showSection('staff')" id="menu-admin" style="display: none;">🔐 Equipe (Admin)</button>
+            </nav>
+
+            <main>
+                <!-- 1. DASHBOARD E VERIFICAÇÃO DE DATAS -->
+                <section id="dashboard" class="section active">
+                    <div class="stats-grid">
+                        <div class="stat-card">
+                            <h3>Total de Livros</h3>
+                            <p id="stat-books">0</p>
+                        </div>
+                        <div class="stat-card success">
+                            <h3>Leitores Cadastrados</h3>
+                            <p id="stat-readers">0</p>
+                        </div>
+                        <div class="stat-card">
+                            <h3>Empréstimos Ativos</h3>
+                            <p id="stat-loans">0</p>
+                        </div>
+                        <div class="stat-card danger">
+                            <h3>Devoluções em Atraso</h3>
+                            <p id="stat-late">0</p>
+                        </div>
+                    </div>
+
+                    <div class="card">
+                        <h3>📅 Monitoramento de Datas de Devolução</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Livro</th>
+                                    <th>Leitor</th>
+                                    <th>Data Empréstimo</th>
+                                    <th>Previsão Devolução</th>
+                                    <th>Situação / Prazo</th>
+                                    <th>Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody id="dashboard-loans-table"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- 2. EMPRÉSTIMO E DEVOLUÇÃO -->
+                <section id="loans" class="section">
+                    <div class="card">
+                        <h3>📤 Registrar Novo Empréstimo</h3>
+                        <form id="loan-form" class="form-grid">
+                            <div class="form-group">
+                                <label>Cód. Barras / ISBN do Livro (Bipe ou Selecione)</label>
+                                <input type="text" id="loan-book-search" class="scanner-input" placeholder="Bipe o código ou digite..." onchange="findBookForLoan(this.value)">
+                                <select id="loan-book-select" required style="margin-top: 5px;"></select>
+                            </div>
+                            <div class="form-group">
+                                <label>Matrícula ou Nome do Leitor</label>
+                                <select id="loan-reader-select" required></select>
+                            </div>
+                            <div class="form-group">
+                                <label>Data de Devolução Prevista</label>
+                                <input type="date" id="loan-due-date" required>
+                            </div>
+                            <div class="form-group" style="justify-content: flex-end;">
+                                <button type="submit" class="btn btn-primary">Confirmar Empréstimo</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="card">
+                        <h3>📥 Devolução Rápida por Código de Barras</h3>
+                        <div class="form-group" style="max-width: 400px;">
+                            <label>Bipe o código de barras do livro devolvido e pressione Enter:</label>
+                            <input type="text" id="quick-return-input" class="scanner-input" placeholder="Aguardando leitura do código...">
+                        </div>
+                    </div>
+                </section>
+
+                <!-- 3. CADASTRO DE LIVROS -->
+                <section id="books" class="section">
+                    <div class="card">
+                        <h3>📖 Cadastrar Livro (Com ou Sem Leitor)</h3>
+                        <form id="book-form">
+                            <div class="form-grid">
+                                <div class="form-group">
+                                    <label>Código de Barras / ISBN (Opcional)</label>
+                                    <div style="display: flex; gap: 5px;">
+                                        <input type="text" id="book-barcode" class="scanner-input" placeholder="Bipe ou deixe vazio" style="flex: 1;">
+                                        <button type="button" class="btn btn-secondary btn-sm" onclick="generateInternalBarcode()">Gerar Cód.</button>
+                                    </div>
+                                    <small style="color: #64748b; font-size: 0.75rem;">Sem leitor? Clique em "Gerar Cód." ou deixe em branco.</small>
+                                </div>
+                                <div class="form-group">
+                                    <label>Título do Livro *</label>
+                                    <input type="text" id="book-title" required placeholder="Ex: Dom Casmurro">
+                                </div>
+                                <div class="form-group">
+                                    <label>Autor *</label>
+                                    <input type="text" id="book-author" required placeholder="Ex: Machado de Assis">
+                                </div>
+                                <div class="form-group">
+                                    <label>Categoria / Gênero</label>
+                                    <input type="text" id="book-category" placeholder="Ex: Literatura Brasileira">
+                                </div>
+                            </div>
+                            <button type="submit" class="btn btn-primary">Salvar Livro no Acervo</button>
+                        </form>
+                    </div>
+
+                    <div class="card">
+                        <h3>Acervo Cadastrado</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Cód. Barras</th>
+                                    <th>Título</th>
+                                    <th>Autor</th>
+                                    <th>Status</th>
+                                    <th>Ações</th>
+                                </tr>
+                            </thead>
+                            <tbody id="books-table"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- 4. CADASTRO DE USUÁRIOS (LEITORES) E CARTEIRINHA -->
+                <section id="readers" class="section">
+                    <div class="card">
+                        <h3>👥 Cadastrar Novo Leitor</h3>
+                        <form id="reader-form" class="form-grid">
+                            <div class="form-group">
+                                <label>Nome Completo *</label>
+                                <input type="text" id="reader-name" required>
+                            </div>
+                            <div class="form-group">
+                                <label>CPF ou Documento *</label>
+                                <input type="text" id="reader-doc" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Telefone / WhatsApp</label>
+                                <input type="text" id="reader-phone">
+                            </div>
+                            <div class="form-group" style="justify-content: flex-end;">
+                                <button type="submit" class="btn btn-primary">Cadastrar Leitor</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="card">
+                        <h3>Lista de Leitores</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Matrícula</th>
+                                    <th>Nome</th>
+                                    <th>Documento</th>
+                                    <th>Telefone</th>
+                                    <th>Carteirinha</th>
+                                </tr>
+                            </thead>
+                            <tbody id="readers-table"></tbody>
+                        </table>
+                    </div>
+                </section>
+
+                <!-- 5. PAINEL ADMINISTRATIVO (GERENCIAR BIBLIOTECÁRIOS) -->
+                <section id="staff" class="section">
+                    <div class="card">
+                        <h3>🔐 Cadastrar Bibliotecário / Administrador</h3>
+                        <form id="staff-form" class="form-grid">
+                            <div class="form-group">
+                                <label>Nome do Funcionário *</label>
+                                <input type="text" id="staff-name" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Login de Acesso *</label>
+                                <input type="text" id="staff-user" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Senha *</label>
+                                <input type="password" id="staff-pass" required>
+                            </div>
+                            <div class="form-group">
+                                <label>Perfil de Acesso</label>
+                                <select id="staff-role">
+                                    <option value="Bibliotecário">Bibliotecário</option>
+                                    <option value="Administrador">Administrador</option>
+                                </select>
+                            </div>
+                            <div class="form-group" style="justify-content: flex-end;">
+                                <button type="submit" class="btn btn-primary">Criar Acesso</button>
+                            </div>
+                        </form>
+                    </div>
+
+                    <div class="card">
+                        <h3>Equipe com Acesso ao Sistema</h3>
+                        <table>
+                            <thead>
+                                <tr>
+                                    <th>Nome</th>
+                                    <th>Login</th>
+                                    <th>Perfil</th>
+                                    <th>Ação</th>
+                                </tr>
+                            </thead>
+                            <tbody id="staff-table"></tbody>
+                        </table>
+                    </div>
+                </section>
+            </main>
+        </div>
+    </div>
+
+    <!-- MODAL DE IMPRESSÃO DE CARTEIRINHA -->
+    <div id="card-modal" class="modal">
+        <div class="modal-content">
+            <h3>Carteirinha do Leitor</h3>
+            <div id="printable-card" class="id-card">
+                <div class="id-card-header">BIBLIOTECH - CARTEIRA DE LEITOR</div>
+                <div class="id-card-body">
+                    <div class="id-photo">FOTO 3x4</div>
+                    <div class="id-details">
+                        <p><strong>Nome:</strong> <span id="card-name"></span></p>
+                        <p><strong>Matrícula:</strong> <span id="card-id"></span></p>
+                        <p><strong>Doc:</strong> <span id="card-doc"></span></p>
+                        <p><strong>Validade:</strong> Indeterminada</p>
+                    </div>
+                </div>
+                <div class="id-barcode" id="card-barcode">*000000*</div>
+            </div>
+            <div style="margin-top: 15px; display: flex; gap: 10px; justify-content: center;">
+                <button onclick="window.print()" class="btn btn-success">🖨️ Imprimir Carteirinha</button>
+                <button onclick="closeModal()" class="btn btn-secondary">Fechar</button>
+            </div>
+        </div>
+    </div>
+
+    <script>
+        // --- BANCO DE DADOS INICIAL (LOCALSTORAGE) ---
+        const defaultStaff = [
+            { id: 1, name: 'Administrador Geral', user: 'admin', pass: '123', role: 'Administrador' },
+            { id: 2, name: 'João Bibliotecário', user: 'biblio', pass: '123', role: 'Bibliotecário' }
+        ];
+
+        let staff = JSON.parse(localStorage.getItem('bib_staff')) || defaultStaff;
+        let books = JSON.parse(localStorage.getItem('bib_books')) || [
+            { id: 101, barcode: '9788535914849', title: '1984', author: 'George Orwell', category: 'Ficção', available: true },
+            { id: 102, barcode: 'INT-202601', title: 'O Pequeno Príncipe', author: 'Antoine de Saint-Exupéry', category: 'Infantil', available: false }
+        ];
+        let readers = JSON.parse(localStorage.getItem('bib_readers')) || [
+            { id: '2026001', name: 'Maria Silva', doc: '123.456.789-00', phone: '(35) 99999-0000' }
+        ];
+        let loans = JSON.parse(localStorage.getItem('bib_loans')) || [
+            { id: 1, bookId: 102, readerId: '2026001', loanDate: '2026-11-01', dueDate: '2026-11-08', returned: false }
+        ];
+
+        let currentUser = null;
+
+        function saveData() {
+            localStorage.setItem('bib_staff', JSON.stringify(staff));
+            localStorage.setItem('bib_books', JSON.stringify(books));
+            localStorage.setItem('bib_readers', JSON.stringify(readers));
+            localStorage.setItem('bib_loans', JSON.stringify(loans));
+            renderAll();
+        }
+
+        // --- AUTENTICAÇÃO ---
+        document.getElementById('login-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const u = document.getElementById('login-user').value.trim();
+            const p = document.getElementById('login-pass').value.trim();
+
+            const found = staff.find(s => s.user === u && s.pass === p);
+            if (found) {
+                currentUser = found;
+                document.getElementById('login-screen').style.display = 'none';
+                document.getElementById('app-screen').style.display = 'flex';
+                document.getElementById('logged-user-name').innerText = found.name;
+                document.getElementById('logged-user-role').innerText = found.role;
+
+                // Controle de Permissão (Admin vs Bibliotecário)
+                document.getElementById('menu-admin').style.display = found.role === 'Administrador' ? 'block' : 'none';
+                setDefaultDueDate();
+                renderAll();
+            } else {
+                alert('Usuário ou senha inválidos!');
+            }
+        });
+
+        function logout() {
+            currentUser = null;
+            document.getElementById('app-screen').style.display = 'none';
+            document.getElementById('login-screen').style.display = 'flex';
+            document.getElementById('login-form').reset();
+        }
+
+        function showSection(id) {
+            document.querySelectorAll('.section').forEach(s => s.classList.remove('active'));
+            document.querySelectorAll('nav button').forEach(b => b.classList.remove('active'));
+            document.getElementById(id).classList.add('active');
+            event.target.classList.add('active');
+        }
+
+        // --- CADASTRO DE LIVROS (COM E SEM LEITOR) ---
+        function generateInternalBarcode() {
+            const randomCode = 'INT-' + Math.floor(100000 + Math.random() * 900000);
+            document.getElementById('book-barcode').value = randomCode;
+        }
+
+        // Evita que o "Enter" do leitor de código de barras envie o formulário antes de preencher o título
+        document.getElementById('book-barcode').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                document.getElementById('book-title').focus();
+            }
+        });
+
+        document.getElementById('book-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            let barcode = document.getElementById('book-barcode').value.trim();
+            if (!barcode) {
+                barcode = 'SEM-COD-' + Math.floor(1000 + Math.random() * 9000);
+            }
+
+            const newBook = {
+                id: Date.now(),
+                barcode: barcode,
+                title: document.getElementById('book-title').value,
+                author: document.getElementById('book-author').value,
+                category: document.getElementById('book-category').value || 'Geral',
+                available: true
+            };
+
+            books.push(newBook);
+            this.reset();
+            saveData();
+            alert('Livro cadastrado com sucesso!');
+        });
+
+        function deleteBook(id) {
+            if (confirm('Deseja remover este livro do acervo?')) {
+                books = books.filter(b => b.id !== id);
+                saveData();
+            }
+        }
+
+        // --- CADASTRO DE LEITORES E CARTEIRINHA ---
+        document.getElementById('reader-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const newReader = {
+                id: '2026' + Math.floor(100 + Math.random() * 899),
+                name: document.getElementById('reader-name').value,
+                doc: document.getElementById('reader-doc').value,
+                phone: document.getElementById('reader-phone').value
+            };
+            readers.push(newReader);
+            this.reset();
+            saveData();
+            openCardModal(newReader.id);
+        });
+
+        function openCardModal(readerId) {
+            const r = readers.find(item => item.id === readerId);
+            if (!r) return;
+            document.getElementById('card-name').innerText = r.name;
+            document.getElementById('card-id').innerText = r.id;
+            document.getElementById('card-doc').innerText = r.doc;
+            document.getElementById('card-barcode').innerText = `*${r.id}*`;
+            document.getElementById('card-modal').style.display = 'flex';
+        }
+
+        function closeModal() {
+            document.getElementById('card-modal').style.display = 'none';
+        }
+
+        // --- EMPRÉSTIMO E DEVOLUÇÃO ---
+        function setDefaultDueDate() {
+            const date = new Date();
+            date.setDate(date.getDate() + 7); // Padrão: 7 dias de prazo
+            document.getElementById('loan-due-date').value = date.toISOString().split('T')[0];
+        }
+
+        function findBookForLoan(code) {
+            const book = books.find(b => b.barcode === code.trim() && b.available);
+            if (book) {
+                document.getElementById('loan-book-select').value = book.id;
+            } else if (code.trim() !== '') {
+                alert('Livro não encontrado ou já está emprestado!');
+            }
+        }
+
+        document.getElementById('loan-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            const bookId = Number(document.getElementById('loan-book-select').value);
+            const readerId = document.getElementById('loan-reader-select').value;
+            const dueDate = document.getElementById('loan-due-date').value;
+
+            const book = books.find(b => b.id === bookId);
+            if (!book || !book.available) return alert('Selecione um livro disponível.');
+
+            book.available = false;
+            loans.push({
+                id: Date.now(),
+                bookId: bookId,
+                readerId: readerId,
+                loanDate: new Date().toISOString().split('T')[0],
+                dueDate: dueDate,
+                returned: false
+            });
+
+            this.reset();
+            setDefaultDueDate();
+            saveData();
+            alert('Empréstimo registrado!');
+        });
+
+        function returnBook(loanId) {
+            const loan = loans.find(l => l.id === loanId);
+            if (!loan) return;
+            loan.returned = true;
+            const book = books.find(b => b.id === loan.bookId);
+            if (book) book.available = true;
+            saveData();
+            alert('Devolução registrada com sucesso!');
+        }
+
+        // Leitor de código de barras na devolução rápida
+        document.getElementById('quick-return-input').addEventListener('keydown', function(e) {
+            if (e.key === 'Enter') {
+                e.preventDefault();
+                const code = this.value.trim();
+                const book = books.find(b => b.barcode === code);
+                if (!book) return alert('Código de barras não encontrado no acervo.');
+
+                const activeLoan = loans.find(l => l.bookId === book.id && !l.returned);
+                if (!activeLoan) return alert('Este livro não possui empréstimo ativo.');
+
+                returnBook(activeLoan.id);
+                this.value = '';
+            }
+        });
+
+        // --- PAINEL ADMIN (EQUIPE) ---
+        document.getElementById('staff-form').addEventListener('submit', function(e) {
+            e.preventDefault();
+            if (currentUser.role !== 'Administrador') return;
+
+            staff.push({
+                id: Date.now(),
+                name: document.getElementById('staff-name').value,
+                user: document.getElementById('staff-user').value,
+                pass: document.getElementById('staff-pass').value,
+                role: document.getElementById('staff-role').value
+            });
+            this.reset();
+            saveData();
+            alert('Usuário da equipe cadastrado!');
+        });
+
+        function deleteStaff(id) {
+            if (id === currentUser.id) return alert('Você não pode excluir seu próprio acesso.');
+            staff = staff.filter(s => s.id !== id);
+            saveData();
+        }
+
+        // --- RENDERIZAÇÃO DAS TABELAS E VERIFICAÇÃO DE DATAS ---
+        function checkDateStatus(dueDateStr) {
+            const today = new Date();
+            today.setHours(0, 0, 0, 0);
+            const due = new Date(dueDateStr + 'T00:00:00');
+            const diffTime = due - today;
+            const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
+
+            if (diffDays < 0) {
+                return { late: true, html: `<span class="status-badge status-late">ATRASADO (${Math.abs(diffDays)} dias)</span>` };
+            } else if (diffDays === 0) {
+                return { late: false, html: `<span class="status-badge status-borrowed">VENCE HOJE</span>` };
+            } else {
+                return { late: false, html: `<span class="status-badge status-ok">No prazo (faltam ${diffDays} dias)</span>` };
+            }
+        }
+
+        function renderAll() {
+            const activeLoans = loans.filter(l => !l.returned);
+            let lateCount = 0;
+
+            // Tabela do Dashboard e Verificação de Datas
+            const dashTbody = document.getElementById('dashboard-loans-table');
+            dashTbody.innerHTML = '';
+            activeLoans.forEach(l => {
+                const book = books.find(b => b.id === l.bookId) || { title: 'Desconhecido' };
+                const reader = readers.find(r => r.id === l.readerId) || { name: 'Desconhecido' };
+                const status = checkDateStatus(l.dueDate);
+                if (status.late) lateCount++;
+
+                dashTbody.innerHTML += `
+                    <tr>
+                        <td><strong>${book.title}</strong></td>
+                        <td>${reader.name}</td>
+                        <td>${l.loanDate.split('-').reverse().join('/')}</td>
+                        <td>${l.dueDate.split('-').reverse().join('/')}</td>
+                        <td>${status.html}</td>
+                        <td><button onclick="returnBook(${l.id})" class="btn btn-success btn-sm">Devolver</button></td>
+                    </tr>
+                `;
+            });
+
+            // Cards Estatísticos
+            document.getElementById('stat-books').innerText = books.length;
+            document.getElementById('stat-readers').innerText = readers.length;
+            document.getElementById('stat-loans').innerText = activeLoans.length;
+            document.getElementById('stat-late').innerText = lateCount;
+
+            // Tabela de Livros & Select de Empréstimo
+            const booksTbody = document.getElementById('books-table');
+            const bookSelect = document.getElementById('loan-book-select');
+            booksTbody.innerHTML = '';
+            bookSelect.innerHTML = '<option value="">Selecione um livro disponível...</option>';
+
+            books.forEach(b => {
+                booksTbody.innerHTML += `
+                    <tr>
+                        <td><code>${b.barcode}</code></td>
+                        <td>${b.title}</td>
+                        <td>${b.author}</td>
+                        <td>${b.available ? '<span class="status-badge status-ok">Disponível</span>' : '<span class="status-badge status-borrowed">Emprestado</span>'}</td>
+                        <td><button onclick="deleteBook(${b.id})" class="btn btn-danger btn-sm">Excluir</button></td>
+                    </tr>
+                `;
+                if (b.available) {
+                    bookSelect.innerHTML += `<option value="${b.id}">[${b.barcode}] ${b.title}</option>`;
+                }
+            });
+
+            // Tabela de Leitores & Select de Empréstimo
+            const readersTbody = document.getElementById('readers-table');
+            const readerSelect = document.getElementById('loan-reader-select');
+            readersTbody.innerHTML = '';
+            readerSelect.innerHTML = '<option value="">Selecione o leitor...</option>';
+
+            readers.forEach(r => {
+                readersTbody.innerHTML += `
+                    <tr>
+                        <td><strong>${r.id}</strong></td>
+                        <td>${r.name}</td>
+                        <td>${r.doc}</td>
+                        <td>${r.phone}</td>
+                        <td><button onclick="openCardModal('${r.id}')" class="btn btn-primary btn-sm">🪪 Ver / Imprimir</button></td>
+                    </tr>
+                `;
+                readerSelect.innerHTML += `<option value="${r.id}">${r.id} - ${r.name}</option>`;
+            });
+
+            // Tabela da Equipe (Admin)
+            const staffTbody = document.getElementById('staff-table');
+            staffTbody.innerHTML = '';
+            staff.forEach(s => {
+                staffTbody.innerHTML += `
+                    <tr>
+                        <td>${s.name}</td>
+                        <td><code>${s.user}</code></td>
+                        <td>${s.role}</td>
+                        <td><button onclick="deleteStaff(${s.id})" class="btn btn-danger btn-sm">Remover</button></td>
+                    </tr>
+                `;
+            });
+        }
+    </script>
+</body>
+</html>
